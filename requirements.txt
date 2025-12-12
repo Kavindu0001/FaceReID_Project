@@ -1,0 +1,9 @@
+opencv-python
+numpy
+tensorflow
+scikit-learn
+flask
+pillow
+mtcnn
+faiss-cpu
+PyYAML

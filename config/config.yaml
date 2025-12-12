@@ -1,0 +1,32 @@
+project:
+  name: FaceReID_BusSystem
+  version: 1.0
+
+paths:
+  raw_images: "data/raw"
+  processed_faces: "data/processed"
+  embeddings: "data/embeddings"
+  models: "models"
+  logs: "logs"
+
+camera:
+  capture_interval: 1        # seconds between frame capture
+  min_face_size: 40          # minimum face detection size
+
+model:
+  embedding_size: 128
+  distance_threshold: 0.75   # lower = stricter matching
+  classifier_model: "models/reid_model.h5"
+
+database:
+  passenger_register: "data/passenger_record.json"
+  entry_exit_log: "data/entry_exit_log.json"
+
+reid:
+  face_detector: "mtcnn"
+  algorithm: "euclidean"    # euclidean | cosine
+  match_top_k: 1
+
+flask:
+  host: "0.0.0.0"
+  port: 5000
