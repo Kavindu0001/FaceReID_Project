@@ -6,7 +6,7 @@ class EntryExitCounter:
         self.entered_ids = set()
         self.exited_ids = set()
 
-        # Frame-level flags
+        # Frame-level flags (only true for ONE frame)
         self._enter_now = set()
         self._exit_now = set()
 
@@ -21,25 +21,32 @@ class EntryExitCounter:
             cy = int((y1 + y2) / 2)
             current_ids.add(track_id)
 
+            # 🔴 FIRST TIME SEEING THIS TRACK
             if track_id not in self.track_last_y:
                 self.track_last_y[track_id] = cy
-                continue
+
+                # 🔥 INITIAL POSITION LOGIC
+                # If person appears BELOW the line, mark as already INSIDE
+                if cy >= self.line_y:
+                    self.entered_ids.add(track_id)
+
+                continue  # ⛔ very important
 
             prev_y = self.track_last_y[track_id]
 
-            # ENTER (top → bottom)
+            # ✅ ENTER (top → bottom)
             if prev_y < self.line_y and cy >= self.line_y:
                 self.entered_ids.add(track_id)
                 self._enter_now.add(track_id)
 
-            # EXIT (bottom → top)
+            # ✅ EXIT (bottom → top)
             elif prev_y > self.line_y and cy <= self.line_y:
                 self.exited_ids.add(track_id)
                 self._exit_now.add(track_id)
 
             self.track_last_y[track_id] = cy
 
-        # Cleanup disappeared tracks
+        # 🧹 Cleanup vanished tracks
         vanished = set(self.track_last_y.keys()) - current_ids
         for tid in vanished:
             del self.track_last_y[tid]
