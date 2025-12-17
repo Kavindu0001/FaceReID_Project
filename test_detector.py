@@ -15,14 +15,11 @@ detector = PersonDetector()
 tracker = SortTracker()
 counter = EntryExitCounter(line_y=350)
 
-print("LINE Y =", counter.line_y)
-
 face_extractor = FaceExtractor()
 face_embedder = FaceEmbedder("reid_model.h5")
 face_verifier = FaceVerifier(threshold=0.6)
 
 logger = CSVLogger("passenger_log.csv")
-
 cap = cv2.VideoCapture(0)
 
 # ================= STATE =================
@@ -53,12 +50,11 @@ while True:
 
         cy = (y1 + y2) // 2
 
-        # 🔥 INITIALIZE STATE CORRECTLY
+        # 🔥 Initialize state based on position
         if track_id not in person_state:
-            if cy >= counter.line_y:
-                person_state[track_id] = "INSIDE"
-            else:
-                person_state[track_id] = "OUTSIDE"
+            person_state[track_id] = (
+                "INSIDE" if cy >= counter.line_y else "OUTSIDE"
+            )
 
         label = ""
         color = (0, 255, 0)
@@ -69,51 +65,39 @@ while True:
         if face is not None:
             embedding = face_embedder.get_embedding(face)
 
-        # 🔍 DEBUG PRINTS
-        print(
-            f"ID={track_id} | prev_y={counter.track_last_y.get(track_id)} | "
-            f"cy={cy} | LINE={counter.line_y}"
-        )
-        print(
-            f"ID={track_id}, cy={cy}, "
-            f"state={person_state[track_id]}, "
-            f"enter={counter.is_entering(track_id)}, "
-            f"exit={counter.is_exiting(track_id)}"
-        )
+        # 🚧 STATE-LOCK PROTECTION (CRITICAL)
+        if counter.is_entering(track_id) and person_state[track_id] == "INSIDE":
+            pass
+        elif counter.is_exiting(track_id) and person_state[track_id] == "OUTSIDE":
+            pass
 
-        # ===== ENTER EVENT =====
-        if (
+        # ===== ENTER EVENT (ONCE) =====
+        elif (
             counter.is_entering(track_id)
-            and person_state[track_id] == "OUTSIDE"
             and track_id not in logged_enter
         ):
             verified = False
-
             if embedding is not None:
                 face_verifier.register_entry(track_id, embedding)
                 verified = True
 
             logger.log(track_id, "ENTER", verified)
-
             logged_enter.add(track_id)
             person_state[track_id] = "INSIDE"
 
             label = "ENTER"
             color = (0, 255, 0)
 
-        # ===== EXIT EVENT =====
+        # ===== EXIT EVENT (ONCE) =====
         elif (
             counter.is_exiting(track_id)
-            and person_state[track_id] == "INSIDE"
             and track_id not in logged_exit
         ):
             verified = False
-
             if embedding is not None:
                 verified = face_verifier.verify_exit(track_id, embedding)
 
             logger.log(track_id, "EXIT", verified)
-
             logged_exit.add(track_id)
             person_state[track_id] = "OUTSIDE"
 
